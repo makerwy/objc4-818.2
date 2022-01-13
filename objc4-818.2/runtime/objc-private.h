@@ -92,6 +92,18 @@ private:
 public:
 #if defined(ISA_BITFIELD)
     struct {
+        /**
+         uintptr_t nonpointer        : 1;
+         uintptr_t has_assoc         : 1;
+         uintptr_t has_cxx_dtor      : 1;
+         uintptr_t shiftcls          : 33; MACH_VM_MAX_ADDRESS 0x1000000000
+         uintptr_t magic             : 6;
+         uintptr_t weakly_referenced : 1;
+         uintptr_t unused            : 1;
+         uintptr_t has_sidetable_rc  : 1;
+         uintptr_t extra_rc          : 19
+         */
+        
         ISA_BITFIELD;  // defined in isa.h
     };
 

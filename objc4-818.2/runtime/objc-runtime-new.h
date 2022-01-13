@@ -1445,6 +1445,10 @@ class protocol_array_t :
     protocol_array_t(protocol_list_t *l) : Super(l) { }
 };
 
+///该类创建条件：
+///1. 动态添加属性方法协议
+///2. 该类存在类别
+///3. 给类设置版本
 struct class_rw_ext_t {
     DECLARE_AUTHED_PTR_TEMPLATE(class_ro_t)
     class_ro_t_authed_ptr<const class_ro_t> ro;
@@ -1455,6 +1459,9 @@ struct class_rw_ext_t {
     uint32_t version;
 };
 
+
+/// rw内部不需要操作运行时添加的方法属性协议
+/// 由rwe来处理
 struct class_rw_t {
     // Be warned that Symbolication knows the layout of this structure.
     uint32_t flags;
@@ -1469,16 +1476,20 @@ struct class_rw_t {
     Class nextSiblingClass;
 
 private:
+    ///別名操作，类似typedef
     using ro_or_rw_ext_t = objc::PointerUnion<const class_ro_t, class_rw_ext_t, PTRAUTH_STR("class_ro_t"), PTRAUTH_STR("class_rw_ext_t")>;
 
+    ///获取ro_or_rw_ext_t
     const ro_or_rw_ext_t get_ro_or_rwe() const {
         return ro_or_rw_ext_t{ro_or_rw_ext};
     }
-
+    ///将class_ro_t存储到成员变量ro_or_rw_ext
     void set_ro_or_rwe(const class_ro_t *ro) {
         ro_or_rw_ext_t{ro, &ro_or_rw_ext}.storeAt(ro_or_rw_ext, memory_order_relaxed);
     }
 
+    ///将class_ro_t赋值给class_rw_ext_t的成员ro，
+    ///并将class_rw_ext_t的指针存储到成员变量ro_or_rw_ext中
     void set_ro_or_rwe(class_rw_ext_t *rwe, const class_ro_t *ro) {
         // the release barrier is so that the class_rw_ext_t::ro initialization
         // is visible to lockless readers
@@ -1489,6 +1500,7 @@ private:
     class_rw_ext_t *extAlloc(const class_ro_t *ro, bool deep = false);
 
 public:
+    ///对成员变量`flags`的操作
     void setFlags(uint32_t set)
     {
         __c11_atomic_fetch_or((_Atomic(uint32_t) *)&flags, set, __ATOMIC_RELAXED);
@@ -1511,15 +1523,21 @@ public:
         } while (!OSAtomicCompareAndSwap32Barrier(oldf, newf, (volatile int32_t *)&flags));
     }
 
+    /**
+     对成员变量`ro_or_rw_ext`的创建、存、取操作；
+     获取class_rw_ext_t
+     */
     class_rw_ext_t *ext() const {
         return get_ro_or_rwe().dyn_cast<class_rw_ext_t *>(&ro_or_rw_ext);
     }
 
+    ///获取class_rw_ext_t，如果沒有则创建一個
     class_rw_ext_t *extAllocIfNeeded() {
         auto v = get_ro_or_rwe();
         if (fastpath(v.is<class_rw_ext_t *>())) {
             return v.get<class_rw_ext_t *>(&ro_or_rw_ext);
         } else {
+            ///创建class_rw_ext_t, 并将class_ro_t中的方法属性协议列表拷贝到rwe中
             return extAlloc(v.get<const class_ro_t *>(&ro_or_rw_ext));
         }
     }
@@ -1528,6 +1546,11 @@ public:
         return extAlloc(ro, true);
     }
 
+    /**
+     先获取class_rw_ext_t成员变量，判断类型，
+     如果是class_rw_ext_t，要取里面的成员变量ro，
+     这里的判断加了一层slowpath，一个优化处理
+     */
     const class_ro_t *ro() const {
         auto v = get_ro_or_rwe();
         if (slowpath(v.is<class_rw_ext_t *>())) {
@@ -1536,6 +1559,7 @@ public:
         return v.get<const class_ro_t *>(&ro_or_rw_ext);
     }
 
+    ///更新class_ro_t
     void set_ro(const class_ro_t *ro) {
         auto v = get_ro_or_rwe();
         if (v.is<class_rw_ext_t *>()) {
@@ -1544,7 +1568,11 @@ public:
             set_ro_or_rwe(ro);
         }
     }
-
+    
+    /**
+     通过成员变量`ro_or_rw_ext`获取方法、属性、协议列表；
+     */
+    
     const method_array_t methods() const {
         auto v = get_ro_or_rwe();
         if (v.is<class_rw_ext_t *>()) {

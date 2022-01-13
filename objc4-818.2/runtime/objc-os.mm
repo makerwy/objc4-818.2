@@ -264,7 +264,9 @@ static header_info * addHeader(const headerType *mhdr, const char *path, int &to
         // Locate the __OBJC segment
         size_t info_size = 0;
         unsigned long seg_size;
+        //_getObjcImageInfo获取的是__DATA,__objc_imageinfo的数据
         const objc_image_info *image_info = _getObjcImageInfo(mhdr,&info_size);
+        //获取的segment为__OBJC的数据
         const uint8_t *objc_segment = getsegmentdata(mhdr,SEG_OBJC,&seg_size);
         if (!objc_segment  &&  !image_info) return NULL;
 
@@ -455,7 +457,9 @@ void
 map_images_nolock(unsigned mhCount, const char * const mhPaths[],
                   const struct mach_header * const mhdrs[])
 {
+    //该tag表明是否是第一次调用该方法。
     static bool firstTime = YES;
+    //mach-o头信息列表
     header_info *hList[mhCount];
     uint32_t hCount;
     size_t selrefCount = 0;
@@ -481,14 +485,15 @@ map_images_nolock(unsigned mhCount, const char * const mhPaths[],
     {
         uint32_t i = mhCount;
         while (i--) {
+            //遍历头信息
             const headerType *mhdr = (const headerType *)mhdrs[i];
-
+            ////给原始的头信息添加其他必要信息
             auto hi = addHeader(mhdr, mhPaths[i], totalClasses, unoptimizedTotalClasses);
             if (!hi) {
                 // no objc data in this entry
                 continue;
             }
-            
+            //如果该头信息是可执行文件类型，则给方法个数添加相应值
             if (mhdr->filetype == MH_EXECUTE) {
                 // Size some data structures based on main executable's size
 #if __OBJC2__
@@ -538,7 +543,9 @@ map_images_nolock(unsigned mhCount, const char * const mhPaths[],
     // executable does not contain Objective-C code but Objective-C 
     // is dynamically loaded later.
     if (firstTime) {
+        //讲selector添加到MapTable中，被注册的selector会被放到一个静态变量namedSelectors中
         sel_init(selrefCount);
+        //自动释放池的初始化 全局散列表创建 关联对象管理者创建
         arr_init();
 
 #if SUPPORT_GC_COMPAT
@@ -593,6 +600,7 @@ map_images_nolock(unsigned mhCount, const char * const mhPaths[],
     }
 
     if (hCount > 0) {
+        //读取images
         _read_images(hList, hCount, totalClasses, unoptimizedTotalClasses);
     }
 
@@ -926,8 +934,10 @@ void _objc_init(void)
     initialized = true;
     
     // fixme defer initialization until an objc-using image is found?
+    //对log系统的初始化,读取环境变量
     environ_init();
     tls_init();
+    //运行C++的静态构造函数
     static_init();
     runtime_init();
     exception_init();

@@ -366,6 +366,7 @@ void SetPageCountWarning(const char* envvar) {
 **********************************************************************/
 void environ_init(void) 
 {
+    //大概意思是判断当前App的uid或者gid有没有发生变化。这里返回的是NO
     if (issetugid()) {
         // All environment variables are silently ignored when setuid or setgid
         // This includes OBJC_HELP and OBJC_PRINT_OPTIONS themselves.
@@ -385,6 +386,7 @@ void environ_init(void)
 
     // Scan environ[] directly instead of calling getenv() a lot.
     // This optimizes the case where none are set.
+    //_NSGetEnviron 获取Xcode中的环境变量
     for (char **p = *_NSGetEnviron(); *p != nil; p++) {
         if (0 == strncmp(*p, "Malloc", 6)  ||  0 == strncmp(*p, "DYLD", 4)  ||  
             0 == strncmp(*p, "NSZombiesEnabled", 16))
@@ -412,6 +414,7 @@ void environ_init(void)
         if (!*value) continue;
         value++;
         
+        //Settings即是本地的变量文件
         for (size_t i = 0; i < sizeof(Settings)/sizeof(Settings[0]); i++) {
             const option_t *opt = &Settings[i];
             if ((size_t)(value - *p) == 1+opt->envlen  &&  

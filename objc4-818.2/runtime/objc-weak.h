@@ -62,11 +62,14 @@ typedef DisguisedPtr<objc_object *> weak_referrer_t;
 #endif
 
 /**
- * The internal structure stored in the weak references table. 
+ * The internal structure stored in the weak references table.
+ * * 存储在弱引用表中的内部结构。
  * It maintains and stores
  * a hash set of weak references pointing to an object.
+ * 它维护和存储指向对象的弱引用散列集。
  * If out_of_line_ness != REFERRERS_OUT_OF_LINE then the set
  * is instead a small inline array.
+ * 如果out_of_line_ness != REFERRERS_OUT_OF_LINE，则该集合是一个小的内联数组。
  */
 #define WEAK_INLINE_COUNT 4
 

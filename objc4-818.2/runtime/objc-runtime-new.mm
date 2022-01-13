@@ -6395,7 +6395,7 @@ IMP lookUpImpOrForward(id inst, SEL sel, Class cls, int behavior)
     const IMP forward_imp = (IMP)_objc_msgForward_impcache;
     IMP imp = nil;
     Class curClass;
-
+ 
     runtimeLock.assertUnlocked();
 
     if (slowpath(!cls->isInitialized())) {
@@ -6434,6 +6434,7 @@ IMP lookUpImpOrForward(id inst, SEL sel, Class cls, int behavior)
     // objc_duplicateClass, objc_initializeClassPair or objc_allocateClassPair.
     checkIsKnownClass(cls);
 
+    
     cls = realizeAndInitializeIfNeeded_locked(inst, cls, behavior & LOOKUP_INITIALIZE);
     // runtimeLock may have been dropped but is now locked again
     runtimeLock.assertLocked();

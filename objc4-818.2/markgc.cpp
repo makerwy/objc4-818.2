@@ -375,6 +375,7 @@ bool sectnameEquals(const char *lhs, const char *rhs)
 
 
 template <typename P>
+//遍历sections
 void dosect(uint8_t *start, macho_section<P> *sect)
 {
     if (debug) printf("section %.16s from segment %.16s\n",
@@ -410,6 +411,7 @@ void dosect(uint8_t *start, macho_section<P> *sect)
 }
 
 template <typename P>
+//遍历segments
 void doseg(uint8_t *start, macho_segment_command<P> *seg)
 {
     if (debug) printf("segment name: %.16s, nsects %u\n",
@@ -422,6 +424,7 @@ void doseg(uint8_t *start, macho_segment_command<P> *seg)
 
 
 template<typename P>
+//解析macho文件
 bool parse_macho(uint8_t *buffer)
 {
     macho_header<P>* mh = (macho_header<P>*)buffer;
@@ -437,7 +440,7 @@ bool parse_macho(uint8_t *buffer)
     return true;
 }
 
-
+//解析macho文件
 bool parse_macho(uint8_t *buffer)
 {
     uint32_t magic = *(uint32_t *)buffer;
@@ -457,7 +460,7 @@ bool parse_macho(uint8_t *buffer)
     }
 }
 
-
+//解析胖文件
 bool parse_fat(uint8_t *buffer, size_t size)
 {
     uint32_t magic;
@@ -560,6 +563,7 @@ bool parse_fat(uint8_t *buffer, size_t size)
 bool processFile(const char *filename)
 {
     if (debug) printf("file %s\n", filename);
+    //打开文件
     int fd = open(filename, O_RDWR);
     if (fd < 0) {
         printf("open %s: %s\n", filename, strerror(errno));
@@ -567,11 +571,13 @@ bool processFile(const char *filename)
     }
     
     struct stat st;
+    //获取文件状态
     if (fstat(fd, &st) < 0) {
         printf("fstat %s: %s\n", filename, strerror(errno));
         return false;
     }
 
+    //将文件映射进内存进行处理
     void *buffer = mmap(NULL, (size_t)st.st_size, PROT_READ|PROT_WRITE, 
                         MAP_FILE|MAP_SHARED, fd, 0);
     if (buffer == MAP_FAILED) {
@@ -579,7 +585,9 @@ bool processFile(const char *filename)
         return false;
     }
 
+    //开始处理进入内存后的文件
     bool result = parse_fat((uint8_t *)buffer, (size_t)st.st_size);
+    //解除映射关系
     munmap(buffer, (size_t)st.st_size);
     close(fd);
     return result;
